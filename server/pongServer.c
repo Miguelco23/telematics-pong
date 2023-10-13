@@ -7,10 +7,13 @@
 
 #define PORT 12345
 #define MAX_CLIENTS 10
+#define CONNECT "CONNECT"
+#define DISCONNECT "DISCONNECT"
 
 typedef struct {
     int socket;
     char name[50];
+    int idUnico;
     // Agrega aquí cualquier otra información que necesites para mantener el estado del jugador
 } Client;
 
@@ -32,20 +35,36 @@ void handle_client(int client_socket) {
     char buffer[1024];
     int bytes_received;
     char client_name[50];
-    strcpy(client_name, "Anonymous");
+    int client_id;
 
     pthread_mutex_lock(&mutex);
     if (num_clients < MAX_CLIENTS) {
+        client_id = num_clients;  // Se asigna una identificación única basada en el número actual de clientes
         clients[num_clients].socket = client_socket;
+        clients[num_clients].idUnico = client_id;
         num_clients++;
     }
     pthread_mutex_unlock(&mutex);
+    
+    // Se recibe el mensaje de conexion y se asigna el nombre del cliente
+    bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
+    buffer[bytes_received] = '\0';
+    char *remote_command = strtok(buffer, " ");
+    char *remote_data = strtok(NULL, " ");
+    if (remote_data != NULL) {
+        strcpy(client_name, remote_data);
+        strcpy(clients[client_id].name, client_name);
+    } else {
+        snprintf(client_name, sizeof(client_name), "Anonymous%d", client_id); // Si no se recibe un nombre se asigna uno predeterminado
+        strcpy(clients[client_id].name, client_name);
+    }
 
     sprintf(buffer, "CONNECTED %s", client_name);
     send(client_socket, buffer, strlen(buffer), 0);
     send_to_all(buffer, client_socket);
 
-    while (1) {
+    int is_connected = 1;
+    while (is_connected) {
         memset(buffer, 0, sizeof(buffer));
         bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
 
@@ -53,30 +72,37 @@ void handle_client(int client_socket) {
             perror("recv");
             break;
         } else if (bytes_received == 0) {
-            printf("Client disconnected\n");
+            printf("Client disconnected...\n");
+            is_connected = 0;
             break;
         }
 
-        printf("Received: %s", buffer);
-        send_to_all(buffer, client_socket);
-    }
+        buffer[bytes_received] = '\0';
+        char *remote_command = strtok(buffer, " ");
+        char *remote_data = strtok(NULL, " ");
+        printf("Command received from client: %s\n", buffer);
 
-    pthread_mutex_lock(&mutex);
-    for (int i = 0; i < num_clients; i++) {
-        if (clients[i].socket == client_socket) {
-            // Elimina al cliente de la lista
-            for (int j = i; j < num_clients - 1; j++) {
-                clients[j] = clients[j + 1];
+        if (strcmp(remote_command, DISCONNECT) == 0) {
+            pthread_mutex_lock(&mutex);
+            for (int i = 0; i < num_clients; i++) { // Elimina al cliente de la lista
+                if (clients[i].socket == client_socket) {
+                    for (int j = i; j < num_clients - 1; j++) {
+                        clients[j] = clients[j + 1];
+                    }
+                    num_clients--;
+                    break;
+                }
             }
-            num_clients--;
-            break;
+            pthread_mutex_unlock(&mutex);
+            
+            sprintf(buffer, "DISCONNECTED %s", client_name);
+            send_to_all(buffer, client_socket);
+            //send(client_socket, buffer, strlen(buffer), 0);
+            is_connected = 0;
+        //} else if (strcmp(remote_command, STATE) == 0) {
+        //} else {
         }
     }
-    pthread_mutex_unlock(&mutex);
-
-    sprintf(buffer, "DISCONNECTED %s", client_name);
-    send_to_all(buffer, client_socket);
-
     close(client_socket);
 }
 
