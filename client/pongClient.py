@@ -25,7 +25,8 @@ BALL_X_SPEED = random.choice((1, -1))
 BALL_Y_SPEED = random.choice((1, -1))
 
 # Posiciones iniciales
-player1_y, player2_y = HEIGHT // 2 - PADDLE_HEIGHT // 2, HEIGHT // 2 - PADDLE_HEIGHT // 2
+player1_y = HEIGHT // 2 - PADDLE_HEIGHT // 2
+player2_y = HEIGHT // 2 - PADDLE_HEIGHT // 2
 ball_x, ball_y = WIDTH // 2, HEIGHT // 2
 
 # Puntuación
@@ -110,13 +111,11 @@ def main():
 
         # Puntuación
         if ball_x > WIDTH:
-            player1_score += 1
             point_message = f"{constants.POINT} {player_id}"
             client_socket.send(bytes(point_message, constants.ENCODING_FORMAT))
             ball_x, ball_y = WIDTH // 2, HEIGHT // 2
             BALL_X_SPEED = random.choice((1, -1))
         elif ball_x < 0:
-            player2_score += 1
             point_message = f"{constants.POINT} {player_id}"
             client_socket.send(bytes(point_message, constants.ENCODING_FORMAT))
             ball_x, ball_y = WIDTH // 2, HEIGHT // 2
