@@ -14,7 +14,7 @@
 #define DISCONNECT "DISCONNECT"
 #define STATE "STATE"
 #define POINT "POINT"
-#define SCORE "SCORE"
+#define OPPOSITE_POINT "OPPOSITE_POINT"
 #define GAME_START "GAME_START"
 #define GAME_WINNER "GAME_WINNER"
 
@@ -23,7 +23,6 @@ typedef struct {
     char name[50];
     int idUnico;
     int roomId;
-    int score;
     // Agrega aquí cualquier otra información que necesites para mantener el estado del jugador
 } Client;
 
@@ -31,10 +30,20 @@ Client clients[MAX_CLIENTS];
 int num_clients = 0;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void send_to_all(char *message, int sender_socket) {
+void send_to_all_room(char *message, int sender_socket) { //Al cliente que lo mando y al cliente opuesto
     pthread_mutex_lock(&mutex);
     for (int i = 0; i < num_clients; i++) {
-        if (clients[i].socket != sender_socket) {
+        if (clients[i].roomId == clients[sender_socket].roomId) {
+            send(clients[i].socket, message, strlen(message), 0);
+        }
+    }
+    pthread_mutex_unlock(&mutex);
+}
+
+void send_to_room(int sender_socket, char *message) { //solamente al cliente opuesto
+    pthread_mutex_lock(&mutex);
+    for (int i = 0; i < num_clients; i++) {
+        if (clients[i].socket != sender_socket && clients[i].roomId == clients[sender_socket].roomId) {
             send(clients[i].socket, message, strlen(message), 0);
         }
     }
@@ -43,16 +52,6 @@ void send_to_all(char *message, int sender_socket) {
 
 void assign_room_id(Client *client) {
     client->roomId = (num_clients + 1) / 2;
-}
-
-void send_to_room(int sender_socket, const char *message) {
-    pthread_mutex_lock(&mutex);
-    for (int i = 0; i < num_clients; i++) {
-        if (clients[i].roomId == clients[sender_socket].roomId) {
-            send(clients[i].socket, message, strlen(message), 0);
-        }
-    }
-    pthread_mutex_unlock(&mutex);
 }
 
 void *handle_client(void *arg) {
@@ -68,12 +67,11 @@ void *handle_client(void *arg) {
         client_id = num_clients;  // Se asigna una identificación única basada en el número actual de clientes
         clients[num_clients].socket = client_socket;
         clients[num_clients].idUnico = client_id;
-        clients[num_clients].score = 0;
         assign_room_id(&clients[num_clients]);  // Asignar un identificador de pareja
         num_clients++;
     }
     pthread_mutex_unlock(&mutex);
-    
+
     // Se recibe el mensaje de conexion y se asigna el nombre del cliente
     bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
     buffer[bytes_received] = '\0';
@@ -124,28 +122,15 @@ void *handle_client(void *arg) {
             pthread_mutex_unlock(&mutex);
             
             sprintf(buffer, "DISCONNECTED %s", client_name);
-            send_to_all(buffer, client_socket);
-            //send(client_socket, buffer, strlen(buffer), 0);
+            send_to_room(buffer, client_socket);
             is_connected = 0;
 
         //} else if (strcmp(remote_command, MOVE) == 0) {
-
+            //Añadir lo que se hace en el movimiento
+    
         } else if (strcmp(remote_command, POINT) == 0) {
-            clients[client_id].score++;
-
-            // Encuentra al otro jugador en la misma sala
-            int other_player_id = -1;
-            for (int i = 0; i < num_clients; i++) {
-                if (clients[i].roomId == clients[client_id].roomId && i != client_id) {
-                    other_player_id = i;
-                    break;
-                }
-            }
-            if (other_player_id != -1) {
-                char score_message[1024];
-                sprintf(score_message, "SCORE %d %d", clients[client_id].score, clients[other_player_id].score);
-                send_to_room(client_id, score_message);
-            }
+            sprintf(buffer, "OPPOSITE_POINT");
+            send_to_room(client_socket, buffer);
         } else {
             continue;
         }
