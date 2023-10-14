@@ -12,6 +12,7 @@
 #define MAX_CLIENTS 10
 #define CONNECT "CONNECT"
 #define DISCONNECT "DISCONNECT"
+#define MOVE "MOVE"
 #define STATE "STATE"
 #define POINT "POINT"
 #define OPPOSITE_POINT "OPPOSITE_POINT"
@@ -40,7 +41,7 @@ void send_to_all_room(char *message, int sender_socket) { //Al cliente que lo ma
     pthread_mutex_unlock(&mutex);
 }
 
-void send_to_room(int sender_socket, char *message) { //solamente al cliente opuesto
+void send_to_room(char *message, int sender_socket) { //solamente al cliente opuesto
     pthread_mutex_lock(&mutex);
     for (int i = 0; i < num_clients; i++) {
         if (clients[i].socket != sender_socket && clients[i].roomId == clients[sender_socket].roomId) {
@@ -125,12 +126,18 @@ void *handle_client(void *arg) {
             send_to_room(buffer, client_socket);
             is_connected = 0;
 
-        //} else if (strcmp(remote_command, MOVE) == 0) {
-            //Añadir lo que se hace en el movimiento
+        } else if (strcmp(remote_command, MOVE) == 0) {
+            if (remote_data == "UP") {
+                sprintf(buffer, "OPPOSITE_MOVE UP");
+                send_to_room(buffer, client_socket);
+            } else if (remote_data == "DOWN") {
+                sprintf(buffer, "OPPOSITE_MOVE DOWN");
+                send_to_room(buffer, client_socket);
+            }
     
         } else if (strcmp(remote_command, POINT) == 0) {
             sprintf(buffer, "OPPOSITE_POINT");
-            send_to_room(client_socket, buffer);
+            send_to_room(buffer, client_socket);
         } else {
             continue;
         }

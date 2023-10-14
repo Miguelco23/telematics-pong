@@ -2,6 +2,7 @@ import socket
 import constants
 import pygame
 import random
+import select
 
 pygame.init()
 
@@ -76,19 +77,31 @@ def main():
                 command_to_send = constants.DISCONNECT
                 client_socket.send(bytes(command_to_send, constants.ENCODING_FORMAT))
                 data_received = client_socket.recv(constants.RECV_BUFFER_SIZE)
-                print(data_received.decode(constants.ENCODING_FORMAT))
+                decoded_data = data_received.decode(constants.ENCODING_FORMAT)
+                print(decoded_data)
                 print('Closing connection...')
 
         keys = pygame.key.get_pressed()
+        
         if keys[pygame.K_w] and player1_y > 0:
             player1_y -= PADDLE_SPEED
+            message = f"{constants.MOVE} {'UP'}"
+            client_socket.send(bytes(message, constants.ENCODING_FORMAT))
+
         if keys[pygame.K_s] and player1_y < HEIGHT - PADDLE_HEIGHT:
             player1_y += PADDLE_SPEED
+            message = f"{constants.MOVE} {'DOWN'}"
+            client_socket.send(bytes(message, constants.ENCODING_FORMAT))
 
-        if keys[pygame.K_UP] and player2_y > 0:
-            player2_y -= PADDLE_SPEED
-        if keys[pygame.K_DOWN] and player2_y < HEIGHT - PADDLE_HEIGHT:
-            player2_y += PADDLE_SPEED
+        data_ready, _, _ = select.select([client_socket], [], [], 0.1)
+        if data_ready:
+            data_received = client_socket.recv(constants.RECV_BUFFER_SIZE)
+            decoded_data = data_received.decode(constants.ENCODING_FORMAT)
+            if decoded_data == "OPPOSITE_MOVE UP" and player2_y > 0:
+                player2_y -= PADDLE_SPEED
+                
+            if decoded_data == "OPPOSITE_MOVE DOWN" and player2_y < HEIGHT - PADDLE_HEIGHT:
+                player2_y += PADDLE_SPEED
 
         ball_x += BALL_SPEED * BALL_X_SPEED
         ball_y += BALL_SPEED * BALL_Y_SPEED
@@ -105,8 +118,8 @@ def main():
 
         # Puntuación
         if ball_x > WIDTH:
-            point_message = f"{constants.POINT} {player_name}"
-            client_socket.send(bytes(point_message, constants.ENCODING_FORMAT))
+            message = f"{constants.POINT} {player_name}"
+            client_socket.send(bytes(message, constants.ENCODING_FORMAT))
             player1_score += 1
             ball_x, ball_y = WIDTH // 2, HEIGHT // 2
             BALL_X_SPEED = random.choice((1, -1))
@@ -115,7 +128,8 @@ def main():
             if data_received == constants.OPPOSITE_POINT:
                 player2_score += 1
                 ball_x, ball_y = WIDTH // 2, HEIGHT // 2
-                BALL_X_SPEED = random.choice((1, -1))
+                BALL_X_SPEED = random.choice((1, -1))               
+
 
         draw_objects()
         pygame.display.update()
