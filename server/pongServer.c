@@ -1,19 +1,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <arpa/inet.h>
+//#include <unistd.h> //Biblioteca de Unix
+//#include <arpa/inet.h> //Biblioteca de Unix
+#include <Winsock2.h> //Biblioteca de Windows
+#include <WS2tcpip.h> //Biblioteca de Windows
 #include <pthread.h>
+#include <math.h>
 
 #define PORT 12345
 #define MAX_CLIENTS 10
 #define CONNECT "CONNECT"
 #define DISCONNECT "DISCONNECT"
+#define STATE "STATE"
+#define POINT "POINT"
+#define SCORE "SCORE"
+#define GAME_START "GAME_START"
+#define GAME_WINNER "GAME_WINNER"
 
 typedef struct {
     int socket;
     char name[50];
     int idUnico;
+    int roomId;
+    int score;
     // Agrega aquí cualquier otra información que necesites para mantener el estado del jugador
 } Client;
 
@@ -31,7 +41,23 @@ void send_to_all(char *message, int sender_socket) {
     pthread_mutex_unlock(&mutex);
 }
 
-void handle_client(int client_socket) {
+void assign_room_id(Client *client) {
+    client->roomId = (num_clients + 1) / 2;
+}
+
+void send_to_room(int sender_socket, const char *message) {
+    pthread_mutex_lock(&mutex);
+    for (int i = 0; i < num_clients; i++) {
+        if (clients[i].roomId == clients[sender_socket].roomId) {
+            send(clients[i].socket, message, strlen(message), 0);
+        }
+    }
+    pthread_mutex_unlock(&mutex);
+}
+
+void *handle_client(void *arg) {
+    int client_socket = *((int *)arg);
+    free(arg);
     char buffer[1024];
     int bytes_received;
     char client_name[50];
@@ -42,6 +68,8 @@ void handle_client(int client_socket) {
         client_id = num_clients;  // Se asigna una identificación única basada en el número actual de clientes
         clients[num_clients].socket = client_socket;
         clients[num_clients].idUnico = client_id;
+        clients[num_clients].score = 0;
+        assign_room_id(&clients[num_clients]);  // Asignar un identificador de pareja
         num_clients++;
     }
     pthread_mutex_unlock(&mutex);
@@ -55,13 +83,13 @@ void handle_client(int client_socket) {
         strcpy(client_name, remote_data);
         strcpy(clients[client_id].name, client_name);
     } else {
-        snprintf(client_name, sizeof(client_name), "Anonymous%d", client_id); // Si no se recibe un nombre se asigna uno predeterminado
+        snprintf(client_name, sizeof(client_name), "Anonymous-%d", client_id); // Si no se recibe un nombre se asigna uno predeterminado
         strcpy(clients[client_id].name, client_name);
     }
 
-    sprintf(buffer, "CONNECTED %s", client_name);
+    sprintf(buffer, "CONNECTED %s", client_name, client_id);
     send(client_socket, buffer, strlen(buffer), 0);
-    send_to_all(buffer, client_socket);
+    //send_to_all(buffer, client_socket);
 
     int is_connected = 1;
     while (is_connected) {
@@ -99,11 +127,31 @@ void handle_client(int client_socket) {
             send_to_all(buffer, client_socket);
             //send(client_socket, buffer, strlen(buffer), 0);
             is_connected = 0;
-        //} else if (strcmp(remote_command, STATE) == 0) {
-        //} else {
+
+        //} else if (strcmp(remote_command, MOVE) == 0) {
+
+        } else if (strcmp(remote_command, POINT) == 0) {
+            clients[client_id].score++;
+
+            // Encuentra al otro jugador en la misma sala
+            int other_player_id = -1;
+            for (int i = 0; i < num_clients; i++) {
+                if (clients[i].roomId == clients[client_id].roomId && i != client_id) {
+                    other_player_id = i;
+                    break;
+                }
+            }
+            if (other_player_id != -1) {
+                char score_message[1024];
+                sprintf(score_message, "SCORE %d %d", clients[client_id].score, clients[other_player_id].score);
+                send_to_room(client_id, score_message);
+            }
+        } else {
+            continue;
         }
     }
     close(client_socket);
+    pthread_exit(NULL);
 }
 
 int main() {
@@ -150,9 +198,13 @@ int main() {
         printf("Client connected\n");
 
         // Crear un hilo para manejar al cliente
+        int *client_socket_ptr = malloc(sizeof(int));
+        *client_socket_ptr = client_socket;
+
         pthread_t thread;
-        pthread_create(&thread, NULL, (void *)handle_client, (void *)&client_socket);
-    }
+        pthread_create(&thread, NULL, handle_client, (void *)client_socket_ptr);
+        pthread_detach(thread); // Liberar recursos automáticamente después de la finalización del hilo
+    }    
 
     close(server_socket);
 
