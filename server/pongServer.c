@@ -138,6 +138,9 @@ void *handle_client(void *arg) {
         } else if (strcmp(remote_command, POINT) == 0) {
             sprintf(buffer, "OPPOSITE_POINT");
             send_to_room(buffer, client_socket);
+        } else if (strcmp(remote_command, AD_WINNER) == 0) {
+            sprintf(buffer, "GAME_WINNER");
+            send_to_room(buffer, client_socket);
         } else {
             continue;
         }

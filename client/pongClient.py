@@ -36,9 +36,6 @@ player1_score, player2_score = 0, 0
 # Reloj para controlar la velocidad de la pantalla
 clock = pygame.time.Clock()
 
-# Fuente para mostrar la puntuación
-font = pygame.font.Font(None, 36)
-
 # Función para dibujar las paletas, la pelota y la puntuación
 def draw_objects():
     screen.fill(BLACK)
