@@ -140,7 +140,7 @@ void *handle_client(void *arg) {
             send_to_room(buffer, client_socket);
         } else if (strcmp(remote_command, AD_WINNER) == 0) {
             sprintf(buffer, "GAME_WINNER");
-            send_to_room(buffer, client_socket);
+            send_to_all_room(buffer, client_socket);
         } else {
             continue;
         }

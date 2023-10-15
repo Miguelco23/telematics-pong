@@ -140,13 +140,13 @@ def main():
                 if player2_score >= 10:
                     running = False
 
-                data_ready, _, _ = select.select([client_socket], [], [], 0.1)
-                if data_ready:
-                    data_received = client_socket.recv(constants.RECV_BUFFER_SIZE)
-                    decoded_data = data_received.decode(constants.ENCODING_FORMAT)
-                    if decoded_data == "GAME_WINNER" and player2_score >= 10:
-                        running = False
-                        winner = "Player 2 is the winner"
+                    data_ready, _, _ = select.select([client_socket], [], [], 0.1)
+                    if data_ready:
+                        data_received = client_socket.recv(constants.RECV_BUFFER_SIZE)
+                        decoded_data = data_received.decode(constants.ENCODING_FORMAT)
+                        if decoded_data == "GAME_WINNER" and player2_score >= 10:
+                            running = False
+                            winner = "Player 2 is the winner"
 
         draw_objects()
         pygame.display.update()
