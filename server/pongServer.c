@@ -12,12 +12,14 @@
 #define CONNECT "CONNECT"
 #define DISCONNECT "DISCONNECT"
 #define MOVE "MOVE"
-#define STATE "STATE"
+#define STATE_BALL "STATE_BALL"
+#define DIR_BALL "DIR_BALL"
 #define POINT "POINT"
 #define OPPOSITE_POINT "OPPOSITE_POINT"
 #define GAME_START "GAME_START"
 #define GAME_WINNER "GAME_WINNER"
 #define AD_WINNER "AD_WINNER"
+
 
 typedef struct {
     int socket;
@@ -53,6 +55,13 @@ void send_to_room(char *message, int sender_socket) { //solamente al cliente opu
 
 void assign_room_id(Client *client) {
     client->roomId = (num_clients + 1) / 2;
+
+}
+
+int random() {
+    srand(time(NULL));
+    int randomNumber = rand() % 2;
+    return (randomNumber == 0) ? -1 : 1;
 }
 
 void *handle_client(void *arg) {
@@ -86,7 +95,7 @@ void *handle_client(void *arg) {
         strcpy(clients[client_id].name, client_name);
     }
 
-    sprintf(buffer, "CONNECTED %s %d", client_name, client_id);
+    sprintf(buffer, "CONNECTED %s", client_name);
     send(client_socket, buffer, strlen(buffer), 0);
     //send_to_all(buffer, client_socket);
 
@@ -108,6 +117,13 @@ void *handle_client(void *arg) {
         char *remote_command = strtok(buffer, " ");
         char *remote_data = strtok(NULL, " ");
         printf("Command received from client: %s\n", buffer);
+
+        if (num_clients % 2 == 0) {
+            sprintf(buffer, "GAME_START");
+            send_to_all_room(buffer, client_socket);
+        } else {
+            continue;
+        }
 
         if (strcmp(remote_command, DISCONNECT) == 0) {
             pthread_mutex_lock(&mutex);
@@ -139,8 +155,14 @@ void *handle_client(void *arg) {
             sprintf(buffer, "OPPOSITE_POINT");
             send_to_room(buffer, client_socket);
             
-        } else if (strcmp(remote_command, AD_WINNER) == 0) {
+        } else if (strcmp(remote_command, AD_WINNER) == 0) { 
             sprintf(buffer, "GAME_WINNER %s", remote_data);
+            send_to_all_room(buffer, client_socket);
+
+        } else if (strcmp(remote_command, STATE_BALL) == 0) {
+            int BALL_X_SPEED = random();
+            int BALL_Y_SPEED = random();
+            sprintf(buffer, "DIR_BALL %d %d", BALL_X_SPEED, BALL_Y_SPEED);
             send_to_all_room(buffer, client_socket);
         } else {
             continue;
