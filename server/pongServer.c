@@ -18,6 +18,7 @@
 #define OPPOSITE_POINT "OPPOSITE_POINT"
 #define GAME_START "GAME_START"
 #define GAME_WINNER "GAME_WINNER"
+#define AD_WINNER "AD_WINNER"
 
 typedef struct {
     int socket;
@@ -86,7 +87,7 @@ void *handle_client(void *arg) {
         strcpy(clients[client_id].name, client_name);
     }
 
-    sprintf(buffer, "CONNECTED %s", client_name, client_id);
+    sprintf(buffer, "CONNECTED %s %d", client_name, client_id);
     send(client_socket, buffer, strlen(buffer), 0);
     //send_to_all(buffer, client_socket);
 
@@ -127,10 +128,10 @@ void *handle_client(void *arg) {
             is_connected = 0;
 
         } else if (strcmp(remote_command, MOVE) == 0) {
-            if (remote_data == "UP") {
+            if (strcmp(remote_data,"UP") == 0) {
                 sprintf(buffer, "OPPOSITE_MOVE UP");
                 send_to_room(buffer, client_socket);
-            } else if (remote_data == "DOWN") {
+            } else if (strcmp(remote_data,"DOWN") == 0) {
                 sprintf(buffer, "OPPOSITE_MOVE DOWN");
                 send_to_room(buffer, client_socket);
             }
@@ -138,8 +139,9 @@ void *handle_client(void *arg) {
         } else if (strcmp(remote_command, POINT) == 0) {
             sprintf(buffer, "OPPOSITE_POINT");
             send_to_room(buffer, client_socket);
+            
         } else if (strcmp(remote_command, AD_WINNER) == 0) {
-            sprintf(buffer, "GAME_WINNER");
+            sprintf(buffer, "GAME_WINNER %s", remote_data);
             send_to_all_room(buffer, client_socket);
         } else {
             continue;

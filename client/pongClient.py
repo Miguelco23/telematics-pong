@@ -121,33 +121,30 @@ def main():
             message = f"{constants.POINT} {player_name}"
             client_socket.send(bytes(message, constants.ENCODING_FORMAT))
             player1_score += 1
-            ball_x, ball_y = WIDTH // 2, HEIGHT // 2
-            BALL_X_SPEED = random.choice((1, -1))
-            
             if player1_score >= 10:
                 running = False
-                winner = "Player 1 is the winner"
                 message = f"{constants.AD_WINNER} {player_name}"
                 client_socket.send(bytes(message, constants.ENCODING_FORMAT))
+                data_received = client_socket.recv(constants.RECV_BUFFER_SIZE)
+                decoded_data = data_received.decode(constants.ENCODING_FORMAT)
+                winner = decoded_data
+            else:
+                ball_x, ball_y = WIDTH // 2, HEIGHT // 2
+                BALL_X_SPEED = random.choice((1, -1))
             
         elif ball_x < 0:
             data_received = client_socket.recv(constants.RECV_BUFFER_SIZE)
             if data_received == constants.OPPOSITE_POINT:
                 player2_score += 1
-                ball_x, ball_y = WIDTH // 2, HEIGHT // 2
-                BALL_X_SPEED = random.choice((1, -1))               
-
                 if player2_score >= 10:
+                    data_received = client_socket.recv(constants.RECV_BUFFER_SIZE)
+                    decoded_data = data_received.decode(constants.ENCODING_FORMAT)
                     running = False
-
-                    data_ready, _, _ = select.select([client_socket], [], [], 0.1)
-                    if data_ready:
-                        data_received = client_socket.recv(constants.RECV_BUFFER_SIZE)
-                        decoded_data = data_received.decode(constants.ENCODING_FORMAT)
-                        if decoded_data == "GAME_WINNER" and player2_score >= 10:
-                            running = False
-                            winner = "Player 2 is the winner"
-
+                    winner = decoded_data
+                else:
+                    ball_x, ball_y = WIDTH // 2, HEIGHT // 2
+                    BALL_X_SPEED = random.choice((1, -1))               
+                  
         draw_objects()
         pygame.display.update()
         clock.tick(60)
