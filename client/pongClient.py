@@ -36,13 +36,18 @@ player1_score, player2_score = 0, 0
 # Reloj para controlar la velocidad de la pantalla
 clock = pygame.time.Clock()
 
+#Fuente para el puntaje y texto
+font = pygame.font.Font(None, 36)
+
+#Variable para el ganador
+winner = ""
+
 # Función para dibujar las paletas, la pelota y la puntuación
 def draw_objects():
     screen.fill(BLACK)
     pygame.draw.rect(screen, WHITE, (0, player1_y, PADDLE_WIDTH, PADDLE_HEIGHT))
     pygame.draw.rect(screen, WHITE, (WIDTH - PADDLE_WIDTH, player2_y, PADDLE_WIDTH, PADDLE_HEIGHT))
     pygame.draw.ellipse(screen, WHITE, (ball_x, ball_y, BALL_SIZE, BALL_SIZE))
-    font = pygame.font.Font(None, 36)
     score_text = font.render(f"{player1_score} - {player2_score}", True, WHITE)
     screen.blit(score_text, (WIDTH // 2 - score_text.get_width() // 2, 10))
     
@@ -149,6 +154,8 @@ def main():
         pygame.display.update()
         clock.tick(60)
 
+    winner_text = font.render(f"{winner}", True, WHITE)
+    screen.blit(winner_text, (WIDTH // 2 - winner_text.get_width() // 2, HEIGHT // 2 - winner_text.get_height() // 2))
     pygame.quit()
     client_socket.close()
 

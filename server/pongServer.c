@@ -6,7 +6,6 @@
 #include <Winsock2.h> //Biblioteca de Windows
 #include <WS2tcpip.h> //Biblioteca de Windows
 #include <pthread.h>
-#include <math.h>
 
 #define PORT 12345
 #define MAX_CLIENTS 10
