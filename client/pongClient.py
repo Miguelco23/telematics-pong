@@ -95,12 +95,12 @@ def main():
 
             keys = pygame.key.get_pressed()
             
-            if keys[pygame.K_w] and player1_y > 0:
+            if keys[pygame.K_UP] and player1_y > 0:
                 player1_y -= PADDLE_SPEED
                 message = f"{constants.MOVE} {'UP'}"
                 client_socket.send(bytes(message, constants.ENCODING_FORMAT))
 
-            if keys[pygame.K_s] and player1_y < HEIGHT - PADDLE_HEIGHT:
+            if keys[pygame.K_DOWN] and player1_y < HEIGHT - PADDLE_HEIGHT:
                 player1_y += PADDLE_SPEED
                 message = f"{constants.MOVE} {'DOWN'}"
                 client_socket.send(bytes(message, constants.ENCODING_FORMAT))

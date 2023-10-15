@@ -55,10 +55,9 @@ void send_to_room(char *message, int sender_socket) { //solamente al cliente opu
 
 void assign_room_id(Client *client) {
     client->roomId = (num_clients + 1) / 2;
-
 }
 
-int random() {
+int choose() {
     srand(time(NULL));
     int randomNumber = rand() % 2;
     return (randomNumber == 0) ? -1 : 1;
@@ -160,8 +159,8 @@ void *handle_client(void *arg) {
             send_to_all_room(buffer, client_socket);
 
         } else if (strcmp(remote_command, STATE_BALL) == 0) {
-            int BALL_X_SPEED = random();
-            int BALL_Y_SPEED = random();
+            int BALL_X_SPEED = choose();
+            int BALL_Y_SPEED = choose();
             sprintf(buffer, "DIR_BALL %d %d", BALL_X_SPEED, BALL_Y_SPEED);
             send_to_all_room(buffer, client_socket);
         } else {
