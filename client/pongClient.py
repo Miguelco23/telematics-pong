@@ -36,6 +36,9 @@ player1_score, player2_score = 0, 0
 # Reloj para controlar la velocidad de la pantalla
 clock = pygame.time.Clock()
 
+# Fuente para mostrar la puntuación
+font = pygame.font.Font(None, 36)
+
 # Función para dibujar las paletas, la pelota y la puntuación
 def draw_objects():
     screen.fill(BLACK)
@@ -123,6 +126,13 @@ def main():
             player1_score += 1
             ball_x, ball_y = WIDTH // 2, HEIGHT // 2
             BALL_X_SPEED = random.choice((1, -1))
+            
+            if player1_score >= 10:
+                running = False
+                winner = "Player 1 is the winner"
+                message = f"{constants.AD_WINNER} {player_name}"
+                client_socket.send(bytes(message, constants.ENCODING_FORMAT))
+            
         elif ball_x < 0:
             data_received = client_socket.recv(constants.RECV_BUFFER_SIZE)
             if data_received == constants.OPPOSITE_POINT:
@@ -130,6 +140,16 @@ def main():
                 ball_x, ball_y = WIDTH // 2, HEIGHT // 2
                 BALL_X_SPEED = random.choice((1, -1))               
 
+                if player2_score >= 10:
+                    running = False
+
+                data_ready, _, _ = select.select([client_socket], [], [], 0.1)
+                if data_ready:
+                    data_received = client_socket.recv(constants.RECV_BUFFER_SIZE)
+                    decoded_data = data_received.decode(constants.ENCODING_FORMAT)
+                    if decoded_data == "GAME_WINNER" and player2_score >= 10:
+                        running = False
+                        winner = "Player 2 is the winner"
 
         draw_objects()
         pygame.display.update()
