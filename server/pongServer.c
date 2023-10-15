@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-//#include <unistd.h> //Biblioteca de Unix
-//#include <arpa/inet.h> //Biblioteca de Unix
-#include <Winsock2.h> //Biblioteca de Windows
-#include <WS2tcpip.h> //Biblioteca de Windows
+#include <unistd.h> //Biblioteca de Unix
+#include <arpa/inet.h> //Biblioteca de Unix
+// #include <Winsock2.h> //Biblioteca de Windows
+// #include <WS2tcpip.h> //Biblioteca de Windows
 #include <pthread.h>
 
 #define PORT 12345
