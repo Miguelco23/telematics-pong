@@ -7,7 +7,7 @@
 // #include <WS2tcpip.h> //Biblioteca de Windows
 #include <pthread.h>
 
-#define PORT 9090
+#define PORT 8080
 #define MAX_CLIENTS 10
 #define CONNECT "CONNECT"
 #define DISCONNECT "DISCONNECT"
