@@ -8,7 +8,7 @@
 #include <pthread.h>
 
 #define LOG_FILE "server_log.txt"  // Archivo de logs
-#define PORT 8080
+#define PORT 12345
 #define MAX_CLIENTS 10
 #define CONNECT "CONNECT"
 #define DISCONNECT "DISCONNECT"
