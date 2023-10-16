@@ -67,19 +67,18 @@ def main():
         print('ERROR MISSING_NAME...')
         player_name = input('Please input a name...')
     client_socket = connect_to_server(player_name)
-    
-    message = f"{constants.STATE_BALL}"
-    client_socket.send(bytes(message, constants.ENCODING_FORMAT))
-    data_received = client_socket.recv(constants.RECV_BUFFER_SIZE)
-    decoded_data = data_received.decode(constants.ENCODING_FORMAT)
-    parts = decoded_data.split()
-    if len(parts) >= 3 and parts[0] == "DIR_BALL":
-        BALL_X_SPEED = parts[1]
-        BALL_Y_SPEED = parts[2]
 
     data_received = client_socket.recv(constants.RECV_BUFFER_SIZE)
     decoded_data = data_received.decode(constants.ENCODING_FORMAT)
     if decoded_data == "GAME_START":
+        message = f"{constants.STATE_BALL}"
+        client_socket.send(bytes(message, constants.ENCODING_FORMAT))
+        data_received = client_socket.recv(constants.RECV_BUFFER_SIZE)
+        decoded_data = data_received.decode(constants.ENCODING_FORMAT)
+        parts = decoded_data.split()
+        if len(parts) >= 3 and parts[0] == "DIR_BALL":
+            BALL_X_SPEED = parts[1]
+            BALL_Y_SPEED = parts[2]
         # Bucle principal del juego
         running = True
         while running:
